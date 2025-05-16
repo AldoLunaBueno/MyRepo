@@ -1,0 +1,60 @@
+name: Move issue to 'In Progress' column on PR
+
+on:
+    pull_request:
+        types: [opened, reopened]
+
+jobs:
+    move-card:
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+
+            - name: Install GitHub CLI
+              run: |
+                echo "Installing..."
+                (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+                && sudo mkdir -p -m 755 /etc/apt/keyrings \
+                    && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+                    && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+                && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+                && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+                && sudo apt update \
+                && sudo apt install gh -y
+                
+                echo "Upgrading..."
+                sudo apt update
+                sudo apt install gh
+
+                echo $(gh --version)
+            
+            - name: Authenticate GitHub CLI
+              run: echo "{{ secrets.GH_TOKEN }}" | gh auth login --with-token
+
+            - name: Find and move project items
+              env:
+                REPO: ${{ github.repository }}
+                PR_NUMBER: ${{ github.event.pull_request.number }}
+                PROJECT_NUMBER: 5
+                ORG: "@me"
+              run: |
+                ISSUE_URL=$(gh pr view "$PR_NUMBER" \
+                    --json closingIssuesReferences -q ".closingIssuesReferences[0].url")
+
+                if [ -z "$ISSUE_URL" ]; then
+                    echo "No issue vinculated to PR"
+                    exit 0
+                fi
+
+                echo "Issue vinculated: $ISSUE_URL"
+
+                # Find the item ID of the issue in the project
+                ITEM_ID=$(gh project item-list "$PROJECT_NUMBER" \
+                    --owner "$ORG" \
+                    )
+
+                # Move project item
+                gh project item-edit --project-id "PVT_kwHOBtYHfM4A5HUu" --id "PVTI_lAHOBtYHfM4A5HUuzgacryI" --field-id "PVTSSF_lAHOBtYHfM4A5HUuzgt98Yw" --single-select-option-id "47fc9ee4"
+
+
