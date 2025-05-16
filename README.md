@@ -31,3 +31,5 @@ gh pr view [PR_NUMBER] --json closingIssuesReferences
   ]
 }
 ```
+
+![alt](images/2025-05-16-13-38-03.png)
