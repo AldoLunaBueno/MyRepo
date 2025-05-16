@@ -50,7 +50,7 @@ jobs:
                 # Find the item ID of the issue in the project
                 echo "Fetching item ID for issue #$ISSUE_NUMBER..."
                 ITEM_ID=$(gh project item-list "$PROJECT_NUMBER" --owner "$ORG" \
-                    --format json --jq '.items | map(select(.content.number == $ISSUE_NUMBER).id)[0]')
+                    --format json --jq ".items | map(select(.content.number == \"$ISSUE_NUMBER\").id)[0]")
 
                 # Move project item
                 echo "Updating item status to '$STATUS_NAME'..."
