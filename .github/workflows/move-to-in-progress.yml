@@ -1,74 +1,73 @@
 name: Move issue to 'In Progress' column on PR
 
 on:
-    pull_request:
-        types: [opened, reopened]
+  pull_request:
+    types: [opened, reopened]
 
 permissions:
-    contents: read
-    issues: write
-    pull-requests: read
-    projects: write
+  contents: read
+  issues: write
+  pull-requests: read
+  projects: write
 
 jobs:
-    move-card:
-        runs-on: ubuntu-22.04
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v3
+  move-card:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-            - name: Check GitHub CLI version
-              run: gh --version # If gh < 2.7,
-                                # gh project doesn't work and
-                                # closingIssuesReferences data not available
-            
-            - name: Authenticate GitHub CLI
-              run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+      - name: Check GitHub CLI version
+        run:
+          gh --version # If gh < 2.7,
+          # gh project doesn't work and
+          # closingIssuesReferences data not available
 
-            - name: Find and move project items
-              env:
-                PR_NUMBER: ${{ github.event.pull_request.number }}
-                PROJECT_NUMBER: 5 # projeqct number asociated with repo
-                ORG: "@me" # owner of the personal authentication token (for project, not PR)
-                STATUS_NAME: "In Progress"
-              run: |
-                # Find Issue number if exists
-                echo "Fetching linked issue to PR #$PR_NUMBER..."
-                ISSUE_NUMBER=$(gh pr view "$PR_NUMBER" --json closingIssuesReferences \
-                    -q ".closingIssuesReferences[0].number")
-                if [ -z "$ISSUE_NUMBER" ]; then
-                    echo "No issue vinculated to PR"
-                    exit 0
-                fi
+      - name: Authenticate GitHub CLI
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-                # Find project ID:
-                PROJECT_ID=$(gh project list --format json \
-                  -q ".projects[]|select(.number == "$PROJECT_NUMBER").id")
+      - name: Find and move project items
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PROJECT_NUMBER: 5 # projeqct number asociated with repo
+          ORG: "@me" # owner of the personal authentication token (for project, not PR)
+          STATUS_NAME: "In Progress"
+        run: |
+          # Find Issue number if exists
+          echo "Fetching linked issue to PR #$PR_NUMBER..."
+          ISSUE_NUMBER=$(gh pr view "$PR_NUMBER" --json closingIssuesReferences \
+              -q ".closingIssuesReferences[0].number")
+          if [ -z "$ISSUE_NUMBER" ]; then
+              echo "No issue vinculated to PR"
+              exit 0
+          fi
 
-                # Find project 'Status' field ID
-                FIELD_ID=$(gh project field-list "$PROJECT_NUMBER" --owner "$ORG" \
-                    --format json --jq '.fields | map(select(.name == "Status").id)[0]')
-                
-                # Find the 'In Progress' option ID of the 'Status' field in the project
-                OPTION_ID=$(gh project field-list "$PROJECT_NUMBER" \
-                    --owner "$ORG" --format json --jq ".fields | \
-                    map(select(.name == \"Status\"))[0].options | \
-                    map(select(.name == \"$STATUS_NAME\").id)[0]")
+          # Find project ID:
+          PROJECT_ID=$(gh project list --format json \
+            -q ".projects[]|select(.number == "$PROJECT_NUMBER").id")
 
-                # Find the item ID of the issue in the project
-                echo "Fetching item ID for issue #$ISSUE_NUMBER..."
-                ITEM_ID=$(gh project item-list "$PROJECT_NUMBER" --owner "$ORG" \
-                    --format json --jq ".items | map(select(.content.number == "$ISSUE_NUMBER").id)[0]")
+          # Find project 'Status' field ID
+          FIELD_ID=$(gh project field-list "$PROJECT_NUMBER" --owner "$ORG" \
+              --format json --jq '.fields | map(select(.name == "Status").id)[0]')
 
-                # Move project item
-                echo "Updating item status to '$STATUS_NAME'..."
-                gh project item-edit --project-id "$PROJECT_ID" --id "$ITEM_ID" \
-                    --field-id "$FIELD_ID" --single-select-option-id "$OPTION_ID"
-                
-                echo "ISSUE_NUMBER: $ISSUE_NUMBER"
-                echo "PROJECT_ID: $PROJECT_ID"
-                echo "FIELD_ID: $FIELD_ID"
-                echo "OPTION_ID: $OPTION_ID"
-                echo "ITEM_ID: $ITEM_ID"
+          # Find the 'In Progress' option ID of the 'Status' field in the project
+          OPTION_ID=$(gh project field-list "$PROJECT_NUMBER" \
+              --owner "$ORG" --format json --jq ".fields | \
+              map(select(.name == \"Status\"))[0].options | \
+              map(select(.name == \"$STATUS_NAME\").id)[0]")
 
+          # Find the item ID of the issue in the project
+          echo "Fetching item ID for issue #$ISSUE_NUMBER..."
+          ITEM_ID=$(gh project item-list "$PROJECT_NUMBER" --owner "$ORG" \
+              --format json --jq ".items | map(select(.content.number == "$ISSUE_NUMBER").id)[0]")
 
+          # Move project item
+          echo "Updating item status to '$STATUS_NAME'..."
+          gh project item-edit --project-id "$PROJECT_ID" --id "$ITEM_ID" \
+              --field-id "$FIELD_ID" --single-select-option-id "$OPTION_ID"
+
+          echo "ISSUE_NUMBER: $ISSUE_NUMBER"
+          echo "PROJECT_ID: $PROJECT_ID"
+          echo "FIELD_ID: $FIELD_ID"
+          echo "OPTION_ID: $OPTION_ID"
+          echo "ITEM_ID: $ITEM_ID"
