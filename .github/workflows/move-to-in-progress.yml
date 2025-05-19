@@ -41,22 +41,21 @@ jobs:
               exit 0
           fi
 
-          # Find project ID:
+          echo "Find project ID"
           PROJECT_ID=$(gh project list --format json \
             -q ".projects[]|select(.number == "$PROJECT_NUMBER").id")
 
-          # Find project 'Status' field ID
+          echo "Find project 'Status' field ID"
           FIELD_ID=$(gh project field-list "$PROJECT_NUMBER" --owner "$ORG" \
               --format json --jq '.fields | map(select(.name == "Status").id)[0]')
 
-          # Find the 'In Progress' option ID of the 'Status' field in the project
+          echo "Find the '$STATUS_NAME' option ID of the 'Status' field in the project"
           OPTION_ID=$(gh project field-list "$PROJECT_NUMBER" \
               --owner "$ORG" --format json --jq ".fields | \
               map(select(.name == \"Status\"))[0].options | \
               map(select(.name == \"$STATUS_NAME\").id)[0]")
 
-          # Find the item ID of the issue in the project
-          echo "Fetching item ID for issue #$ISSUE_NUMBER..."
+          echo "Find the item ID of the issue in the project"
           ITEM_ID=$(gh project item-list "$PROJECT_NUMBER" --owner "$ORG" \
               --format json --jq ".items | map(select(.content.number == "$ISSUE_NUMBER").id)[0]")
 
