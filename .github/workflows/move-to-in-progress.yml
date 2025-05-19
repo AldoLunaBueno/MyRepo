@@ -13,7 +13,7 @@ jobs:
   move-card:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
+      - name: Checkout*
         uses: actions/checkout@v3
 
       - name: Check GitHub CLI version
@@ -42,6 +42,7 @@ jobs:
           fi
 
           echo "Find project ID"
+          echo $(gh project list)
           PROJECT_ID=$(gh project list --format json \
             -q ".projects[]|select(.number == "$PROJECT_NUMBER").id")
 
